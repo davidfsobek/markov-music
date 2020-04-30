@@ -3,7 +3,7 @@
 # chain from it.
 
 import hashlib
-import mido
+from music21 import converter, chord, note, instrument, stream
 import argparse
 
 from markov_chain import MarkovChain
@@ -23,7 +23,6 @@ class Parser:
         # The delta time between each midi message is a number that
         # is a number of ticks, which we can convert to beats using
         # ticks_per_beat.
-        self.ticks_per_beat = None
         self.markov_chain = MarkovChain()
         self._parse(verbose=verbose)
 
@@ -33,49 +32,26 @@ class Parser:
         notes into sequenced "chords", which are inserted into the
         markov chain.
         """
-        midi = mido.MidiFile(self.filename)
-        self.ticks_per_beat = midi.ticks_per_beat
-        previous_chunk = []
-        current_chunk = []
-        for track in midi.tracks:
-            for message in track:
+        previous_notes = None
+
+        midi = converter.parse(self.filename)
+        for parts in midi:
+            for n in parts.recurse():
                 if verbose:
-                    print(message)
-                if message.type == "set_tempo":
-                    self.tempo = message.tempo
-                elif message.type == "note_on":
-                    if message.time == 0:
-                        current_chunk.append(message.note)
-                    else:
-                        self._sequence(previous_chunk,
-                                       current_chunk,
-                                       message.time)
-                        previous_chunk = current_chunk
-                        current_chunk = []
-
-    def _sequence(self, previous_chunk, current_chunk, duration):
-        """
-        Given the previous chunk and the current chunk of notes as well
-        as an averaged duration of the current notes, this function
-        permutes every combination of the previous notes to the current
-        notes and sticks them into the markov chain.
-        """
-        for n1 in previous_chunk:
-            for n2 in current_chunk:
-                self.markov_chain.add(
-                    n1, n2, self._bucket_duration(duration))
-
-    def _bucket_duration(self, ticks):
-        """
-        This method takes a tick count and converts it to a time in
-        milliseconds, bucketing it to the nearest 250 milliseconds.
-        """
-        try:
-            ms = ((ticks / self.ticks_per_beat) * self.tempo) / 1000
-            return int(ms - (ms % 250) + 250)
-        except TypeError:
-            raise TypeError(
-                "Could not read a tempo and ticks_per_beat from midi")
+                    print(str(n))
+                notes = ""
+                if isinstance(n, note.Note):
+                    notes = str(n.pitch)
+                elif isinstance(n, chord.Chord):
+                    n_c = str(n).replace('>', '')
+                    notes = '|'.join(n_c.split()[1:])
+                duration = float(n.duration.quarterLength)
+                # offset = float(n.offset) - previous_offset  # will figure out later
+                offset = 0
+                
+                if previous_notes != None:
+                    self.markov_chain.add(previous_notes, notes, duration, offset)
+                previous_notes = notes
 
     def get_chain(self):
         return self.markov_chain

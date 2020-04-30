@@ -5,7 +5,7 @@ from collections import Counter, defaultdict, namedtuple
 
 import random
 
-Note = namedtuple('Note', ['note', 'duration'])
+Note = namedtuple('Note', ['notes', 'duration', 'offset'])
 
 class MarkovChain:
 
@@ -22,15 +22,15 @@ class MarkovChain:
                 m.add(from_note, k, v)
         return m
 
-    def _serialize(self, note, duration):
-        return Note(note, duration)
+    def _serialize(self, notes, duration, offset):
+        return Note(notes, duration, offset)
 
     def __str__(self):
         return str(self.get_chain())
 
-    def add(self, from_note, to_note, duration):
-        self.chain[from_note][self._serialize(to_note, duration)] += 1
-        self.sums[from_note] += 1
+    def add(self, from_notes, to_notes, duration, offset):
+        self.chain[from_notes][self._serialize(to_notes, duration, offset)] += 1
+        self.sums[from_notes] += 1
 
     def get_next(self, seed_note):
         if seed_note is None or seed_note not in self.chain:
