@@ -13,10 +13,6 @@ pip install -r requirements.txt
 [Click here](http://www.music-software-development.com/midi-tutorial.html)
 for a reference on how MIDIs are encoded.
 
-Refer to this
-[article](https://medium.com/@omgimanerd/generating-music-using-markov-chains-40c3f3f46405#.1wukhwbrt)
-for more details on the implementation of the music generator.
-
 ## Contributing
 Fork this repository and clone it to your own computer. Send me a pull request
 with interesting thoughts, ideas, or suggestions.
@@ -25,3 +21,4 @@ to the codebase. Avoid pushing large MIDI files if possible.
 
 ## Contributors
 Alvin Lin (omgimanerd)
+David Sobek
