@@ -12,6 +12,7 @@ class MarkovChain:
     def __init__(self):
         self.chain = defaultdict(Counter)
         self.sums = defaultdict(int)
+        self.order = 1
 
     @staticmethod
     def create_from_dict(dict):

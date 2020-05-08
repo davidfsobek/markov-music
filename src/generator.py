@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # This class handles the generation of a new song given a markov chain
 # containing the note transitions and their frequencies.
-from markov_chain import MarkovChain
+from markov_chain import MarkovChain, Note
 
 import random
 import ctcsound
@@ -38,15 +38,10 @@ endin
 
 # drum
 INSTR2 = """
-; p4 is amplitude
-instr 2
-iamp = p4
-kenv linseg 0, 0.01, 1, 0.01, 0, p3 - 0.02, 0
-asig rand 1
-aout = asig*kenv*iamp
-gaverb	 =	gaverb+aout*0.1
-outs aout, aout
-endin
+	instr	102	; SIMPLE FM
+a1	foscil	10000, 440, 1, 2, 3, 1
+ 	out	a1
+ 	endin
 """
 
 REVERB_INST = """
@@ -173,11 +168,14 @@ class Generator:
         instr_score = ""
         # Generate a sequence of notes for the requested duration
         while current_duration < duration:
-            new_notes = self.markov_chain.get_next(last_note)
+            new_note_entry = self.markov_chain.get_next(last_note)
+            # take the last note in the list
+            new_notes =  Note(new_note_entry.notes.split(',')[-1],
+                                    new_note_entry.duration, new_note_entry.offset)
             if new_notes.notes != '' and new_notes.duration > 0:
                 instr_score += self._notes_to_score_line(new_notes, current_duration, instr)
                 current_duration += new_notes.duration + new_notes.offset
-            last_note = new_notes
+            last_note = new_note_entry
         
         self.score += instr_score
         self.total_duration = max(self.total_duration, current_duration)
@@ -198,7 +196,7 @@ if __name__ == "__main__":
         print(g.score)
 
         if len(sys.argv)==3:
-            perform(orc, g.score, create_wav=True, wav_file=sys.argv[1])
+            perform(orc, g.score, create_wav=True, wav_file=sys.argv[2])
         else:
             perform(orc, g.score)
 

@@ -10,7 +10,7 @@ from markov_chain import MarkovChain
 
 class Parser:
 
-    def __init__(self, filename, verbose=False):
+    def __init__(self, filename, verbose=False, order=1):
         """
         This is the constructor for a Serializer, which will serialize
         a midi given the filename and generate a markov chain of the
@@ -24,6 +24,10 @@ class Parser:
         # is a number of ticks, which we can convert to beats using
         # ticks_per_beat.
         self.markov_chain = MarkovChain()
+
+        self.order=order
+        self.markov_chain.order = order
+
         self._parse(verbose=verbose)
 
     def _parse(self, verbose=False):
@@ -32,11 +36,14 @@ class Parser:
         notes into sequenced "chords", which are inserted into the
         markov chain.
         """
-        previous_notes = None
+        previous_notes = []
 
         midi = converter.parse(self.filename)
         for parts in midi:
-            for n in parts.recurse():
+            list_of_notes = list(parts.recurse())
+            list_of_notes.sort(key=lambda x: float(x.offset))
+            previous_offset = 0.0
+            for n in list_of_notes:
                 if verbose:
                     print(str(n))
                 notes = ""
@@ -46,12 +53,20 @@ class Parser:
                     n_c = str(n).replace('>', '')
                     notes = '|'.join(n_c.split()[1:])
                 duration = float(n.duration.quarterLength)
-                # offset = float(n.offset) - previous_offset  # will figure out later
-                offset = 0
+                note_offset = float(n.offset) - previous_offset
+                previous_offset = float(n.offset)
                 
-                if previous_notes != None:
-                    self.markov_chain.add(previous_notes, notes, duration, offset)
-                previous_notes = notes
+                # generalized for orders greater than 0.
+                next_notes = None
+                if len(previous_notes) < self.order:
+                    next_notes = previous_notes + [notes]
+                else:
+                    next_notes = previous_notes[1:] + [notes]
+                
+                if len(previous_notes) != 0:
+                    self.markov_chain.add(','.join(previous_notes), ','.join(next_notes), duration, note_offset)
+                
+                previous_notes = next_notes
 
     def get_chain(self):
         return self.markov_chain
